@@ -12,9 +12,10 @@ import 'package:scanning_app/src/app/app.dart';
 void main() {
   testWidgets('shows scanner tab on launch', (WidgetTester tester) async {
     await tester.pumpWidget(const PalmScannerApp());
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('Palm Scanner'), findsOneWidget);
-    expect(find.text('Scan My Hand'), findsOneWidget);
+    expect(find.text('Start Palm Scan'), findsOneWidget);
   });
 }

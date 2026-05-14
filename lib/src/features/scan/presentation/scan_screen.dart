@@ -73,16 +73,16 @@ class _ScanScreenState extends State<ScanScreen> with SingleTickerProviderStateM
     try {
       // Simulate scanning process time for a professional feel
       await Future.delayed(const Duration(seconds: 2));
-      
-      await _cameraController!.takePicture();
-      
+
+      final file = await _cameraController!.takePicture();
+
       if (mounted) {
         setState(() {
           _isScanning = false;
         });
         Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => const ReadingResultScreen(),
+            builder: (_) => ReadingResultScreen(imagePath: file.path),
           ),
         );
       }
