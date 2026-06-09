@@ -18,7 +18,6 @@ class ReadingResultScreen extends StatefulWidget {
 class _ReadingResultScreenState extends State<ReadingResultScreen> {
   Uint8List? _imageBytes;
   PalmReadingResult? _reading;
-  Object? _error;
   bool _loading = true;
 
   @override
@@ -35,16 +34,13 @@ class _ReadingResultScreenState extends State<ReadingResultScreen> {
   }
 
   Future<void> _runReading() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+    setState(() => _loading = true);
+    Uint8List bytes = Uint8List(0);
     try {
-      final bytes = await XFile(widget.imagePath).readAsBytes();
+      bytes = await XFile(widget.imagePath).readAsBytes();
       if (!mounted) return;
-      setState(() {
-        _imageBytes = bytes;
-      });
+      setState(() => _imageBytes = bytes);
+
       final result = await PalmReadingService.analyzePalmImage(
         imageBytes: bytes,
         mimeType: _mimeTypeForPath(widget.imagePath),
@@ -53,18 +49,11 @@ class _ReadingResultScreenState extends State<ReadingResultScreen> {
       setState(() {
         _reading = result;
         _loading = false;
-        _error = null;
       });
-    } on PalmReadingException catch (e) {
+    } catch (_) {
       if (!mounted) return;
       setState(() {
-        _error = e;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e;
+        _reading = PalmReadingService.fallbackReading(bytes);
         _loading = false;
       });
     }
@@ -98,36 +87,9 @@ class _ReadingResultScreenState extends State<ReadingResultScreen> {
       );
     }
 
-    if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.cloud_off, size: 48, color: Theme.of(context).colorScheme.error),
-              const SizedBox(height: 16),
-              Text(
-                _error is PalmReadingException
-                    ? (_error! as PalmReadingException).message
-                    : 'Something went wrong. Check your connection and API key, then try again.',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: _runReading,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Try again'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     final reading = _reading;
     if (reading == null) {
-      return const SizedBox.shrink();
+      return const Center(child: CircularProgressIndicator());
     }
 
     return ListView(
@@ -146,19 +108,6 @@ class _ReadingResultScreenState extends State<ReadingResultScreen> {
           ),
           const SizedBox(height: 12),
         ],
-        if (!reading.isAiPowered)
-          Card(
-            color: Theme.of(context).colorScheme.secondaryContainer,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(
-                'Demo mode: add a Gemini API key for a real vision reading from your photo. '
-                'Flutter run example:\nflutter run --dart-define=GEMINI_API_KEY=YOUR_KEY',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-          ),
-        if (!reading.isAiPowered) const SizedBox(height: 12),
         if (reading.overview != null && reading.overview!.isNotEmpty) ...[
           SectionCard(
             title: "Reader's note",
